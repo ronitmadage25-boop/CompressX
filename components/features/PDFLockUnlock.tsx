@@ -79,7 +79,7 @@ export default function PDFLockUnlock() {
         }
       }
 
-      const blob = new Blob([outputBytes], { type: 'application/pdf' });
+      const blob = new Blob([outputBytes.buffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const suffix = mode === 'lock' ? '_locked' : '_unlocked';
       const newName = file.name.replace(/\.pdf$/i, `${suffix}.pdf`);
