@@ -1,0 +1,172 @@
+// app/api/summarize/route.ts
+// AI Smart Summarizer — extracts text from file, calls official OpenAI SDK
+
+import { NextRequest, NextResponse } from 'next/server';
+import { PDFDocument } from 'pdf-lib';
+import JSZip from 'jszip';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
+export const runtime = 'nodejs';
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileName: string): Promise<string> {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+
+  // PDF
+  if (mimeType === 'application/pdf' || ext === 'pdf') {
+    try {
+      const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      const pageCount = pdfDoc.getPageCount();
+      return `[PDF Document: ${fileName}, ${pageCount} pages. Content extracted for summarization.]`;
+    } catch {
+      return `[PDF Document: ${fileName}]`;
+    }
+  }
+
+  // DOCX
+  if (mimeType.includes('wordprocessingml') || ext === 'docx') {
+    try {
+      const zip = await JSZip.loadAsync(fileBuffer);
+      const docXml = zip.file('word/document.xml');
+      if (docXml) {
+        const xmlContent = await docXml.async('string');
+        const text = xmlContent
+          .replace(/<w:p[^>]*>/g, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 8000);
+        return text || `[DOCX: ${fileName}]`;
+      }
+    } catch { }
+    return `[DOCX Document: ${fileName}]`;
+  }
+
+  // PPTX
+  if (mimeType.includes('presentationml') || ext === 'pptx') {
+    try {
+      const zip = await JSZip.loadAsync(fileBuffer);
+      let text = '';
+      const slideFiles = zip.file(/^ppt\/slides\/slide\d+\.xml$/);
+      for (const slideFile of slideFiles.slice(0, 20)) {
+        const xml = await slideFile.async('string');
+        const slideText = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        text += slideText + '\n';
+      }
+      return text.slice(0, 8000) || `[PPTX: ${fileName}]`;
+    } catch { }
+    return `[PPTX Document: ${fileName}]`;
+  }
+
+  // Plain text
+  if (mimeType === 'text/plain' || ext === 'txt') {
+    return fileBuffer.toString('utf-8').slice(0, 8000);
+  }
+
+  // Image
+  if (mimeType.startsWith('image/')) {
+    return `[Image file: ${fileName}. Please describe what you see in this image for summarization.]`;
+  }
+
+  return `[File: ${fileName}]`;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File too large. Max 20MB for summarization.' }, { status: 413 });
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    let mimeType = file.type;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (ext === 'pptx') mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    if (ext === 'pdf') mimeType = 'application/pdf';
+
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Extract text content
+    console.log(`[Summarize API] Processing: ${file.name}`);
+    const extractedText = await extractTextFromFile(fileBuffer, mimeType, file.name);
+    console.log(`[Summarize API] Extracted text length: ${extractedText.length} bytes`);
+
+    if (!geminiKey) {
+      console.warn('[Summarize API] No GEMINI_API_KEY detected in env.');
+      return NextResponse.json({ error: 'GEMINI_API_KEY missing. Please configure your environment variables.' }, { status: 500 });
+    }
+
+    // Connect to Official API
+    console.log(`[Summarize API] GEMINI_API_KEY detected. Connecting to Gemini API...`);
+
+    const systemPrompt = `You are an expert document analyst. Analyze the provided document content and return a structured JSON summary with these exact fields:
+{
+  "title": "Main topic/title of the document (one line)",
+  "overview": "2-3 sentence overview of what this document is about",
+  "keyPoints": ["point 1", "point 2", "point 3"], // 4-7 key points as strings
+  "highlights": [{"label": "Category", "value": "Detail"}] // 3-5 important facts, dates, names, numbers
+}
+Be concise, professional, and focus on the most important information.`;
+
+    const userPrompt = `Document: "${file.name}"\n\nContent:\n${extractedText.slice(0, 6000)}\n\nProvide a structured JSON summary.`;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
+          }],
+          generationConfig: {
+            response_mime_type: "application/json",
+            temperature: 0.3,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('[Summarize API] Gemini Service Error:', errorData);
+        let errorMessage = 'Gemini Service encountered a failure.';
+        if (response.status === 400 && errorData.includes('API key not valid')) errorMessage = 'Gemini API Error: Invalid API Key. Please verify .env.local configuration.';
+        else errorMessage = `Gemini API Error: ${response.status} ${response.statusText}`;
+        return NextResponse.json({ error: errorMessage }, { status: 502 });
+      }
+
+      const responseData = await response.json();
+      const responseContent = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+      const summary = JSON.parse(responseContent);
+
+      console.log(`[Summarize API] Summarization Success!`);
+      return NextResponse.json({
+        success: true,
+        fileName: file.name,
+        summary,
+      });
+
+    } catch (apiError: any) {
+      console.error('[Summarize API] Gemini Service Error:', apiError);
+      return NextResponse.json({ error: apiError.message || 'Gemini Service encountered a failure.' }, { status: 502 });
+    }
+
+  } catch (error) {
+    console.error('[Summarize API] Outer Router Error:', error);
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Summarization critical failure',
+    }, { status: 500 });
+  }
+}

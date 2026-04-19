@@ -1,0 +1,19 @@
+{
+  "functions": {
+    "app/api/compress/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/upload/route.ts": {
+      "maxDuration": 60,
+      "memory": 512
+    },
+    "app/api/download/[filename]/route.ts": {
+      "maxDuration": 60,
+      "memory": 512
+    }
+  },
+  "env": {
+    "VERCEL_ENV": "production"
+  }
+}
