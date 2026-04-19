@@ -1,9 +1,7 @@
-// app/api/summarize/route.ts
-// AI Smart Summarizer — extracts text from file, calls official OpenAI SDK
-
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
+const pdf = require('pdf-parse');
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -17,11 +15,17 @@ async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileNam
   // PDF
   if (mimeType === 'application/pdf' || ext === 'pdf') {
     try {
+      // Use pdf-parse for actual text extraction
+      const data = await pdf(fileBuffer);
+      const text = data.text.trim().slice(0, 8000);
+      if (text.length > 50) return text;
+      
+      // Fallback if text is too sparse (might be scanned)
       const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
-      const pageCount = pdfDoc.getPageCount();
-      return `[PDF Document: ${fileName}, ${pageCount} pages. Content extracted for summarization.]`;
-    } catch {
-      return `[PDF Document: ${fileName}]`;
+      return `[PDF: ${fileName}, ${pdfDoc.getPageCount()} pages]. Content appears to be scanned or non-selectable. Unable to read this file. Try another document or a text-based PDF.`;
+    } catch (err) {
+      console.error('[Summarize API] PDF Extraction Error:', err);
+      return `Unable to read this file. Try another document or a text-based PDF.`;
     }
   }
 
@@ -38,10 +42,10 @@ async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileNam
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 8000);
-        return text || `[DOCX: ${fileName}]`;
+        return text || `Unable to read this file. Try another document or a text-based PDF.`;
       }
     } catch { }
-    return `[DOCX Document: ${fileName}]`;
+    return `Unable to read this file. Try another document or a text-based PDF.`;
   }
 
   // PPTX
@@ -55,22 +59,23 @@ async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileNam
         const slideText = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         text += slideText + '\n';
       }
-      return text.slice(0, 8000) || `[PPTX: ${fileName}]`;
+      return text.slice(0, 8000) || `Unable to read this file. Try another document or a text-based PDF.`;
     } catch { }
-    return `[PPTX Document: ${fileName}]`;
+    return `Unable to read this file. Try another document or a text-based PDF.`;
   }
 
   // Plain text
   if (mimeType === 'text/plain' || ext === 'txt') {
-    return fileBuffer.toString('utf-8').slice(0, 8000);
+    const text = fileBuffer.toString('utf-8').slice(0, 8000);
+    return text.trim() || `Unable to read this file. Try another document or a text-based PDF.`;
   }
 
   // Image
   if (mimeType.startsWith('image/')) {
-    return `[Image file: ${fileName}. Please describe what you see in this image for summarization.]`;
+    return `[Image file: ${fileName}]. Please analyze the visual content and provide a summary of the likely text or purpose.`;
   }
 
-  return `[File: ${fileName}]`;
+  return `Unable to read this file. Try another document or a text-based PDF.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -100,6 +105,15 @@ export async function POST(request: NextRequest) {
     console.log(`[Summarize API] Processing: ${file.name}`);
     const extractedText = await extractTextFromFile(fileBuffer, mimeType, file.name);
     console.log(`[Summarize API] Extracted text length: ${extractedText.length} bytes`);
+
+    // If we couldn't extract enough meaningful text, return the friendly error directly
+    if (extractedText.includes('Unable to read this file') || extractedText.length < 10) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Unable to read this file. Try another document or a text-based PDF." 
+      }, { status: 422 });
+    }
+
 
     if (!geminiKey) {
       console.warn('[Summarize API] No GEMINI_API_KEY detected in env.');
