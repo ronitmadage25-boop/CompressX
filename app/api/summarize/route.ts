@@ -9,23 +9,24 @@ export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileName: string): Promise<string> {
+async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileName: string): Promise<{ text: string | null; error?: string }> {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
 
   // PDF
   if (mimeType === 'application/pdf' || ext === 'pdf') {
     try {
-      // Use pdf-parse for actual text extraction
       const data = await pdf(fileBuffer);
       const text = data.text.trim().slice(0, 8000);
-      if (text.length > 50) return text;
+      if (text.length > 50) return { text };
       
-      // Fallback if text is too sparse (might be scanned)
       const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
-      return `[PDF: ${fileName}, ${pdfDoc.getPageCount()} pages]. Content appears to be scanned or non-selectable. Unable to read this file. Try another document or a text-based PDF.`;
+      return { 
+        text: null, 
+        error: "No readable content found. This file appears to be scanned or non-selectable." 
+      };
     } catch (err) {
       console.error('[Summarize API] PDF Extraction Error:', err);
-      return `Unable to read this file. Try another document or a text-based PDF.`;
+      return { text: null, error: "Unable to read this file. Try a text-based document." };
     }
   }
 
@@ -42,10 +43,12 @@ async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileNam
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 8000);
-        return text || `Unable to read this file. Try another document or a text-based PDF.`;
+        if (text) return { text };
       }
-    } catch { }
-    return `Unable to read this file. Try another document or a text-based PDF.`;
+    } catch (err) {
+      console.error('[Summarize API] DOCX Extraction Error:', err);
+    }
+    return { text: null, error: "No readable content found in this Word document." };
   }
 
   // PPTX
@@ -59,23 +62,28 @@ async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, fileNam
         const slideText = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         text += slideText + '\n';
       }
-      return text.slice(0, 8000) || `Unable to read this file. Try another document or a text-based PDF.`;
-    } catch { }
-    return `Unable to read this file. Try another document or a text-based PDF.`;
+      if (text.trim()) return { text: text.slice(0, 8000) };
+    } catch (err) {
+      console.error('[Summarize API] PPTX Extraction Error:', err);
+    }
+    return { text: null, error: "No readable content found in this PowerPoint." };
   }
 
   // Plain text
   if (mimeType === 'text/plain' || ext === 'txt') {
     const text = fileBuffer.toString('utf-8').slice(0, 8000);
-    return text.trim() || `Unable to read this file. Try another document or a text-based PDF.`;
+    if (text.trim()) return { text: text.trim() };
+    return { text: null, error: "This text file is empty." };
   }
 
   // Image
   if (mimeType.startsWith('image/')) {
-    return `[Image file: ${fileName}]. Please analyze the visual content and provide a summary of the likely text or purpose.`;
+    return { 
+      text: `[Image file: ${fileName}]. Please analyze the visual content and provide a summary of the likely text or purpose.` 
+    };
   }
 
-  return `Unable to read this file. Try another document or a text-based PDF.`;
+  return { text: null, error: "File not supported. Try a PDF, Word, or text-based document." };
 }
 
 export async function POST(request: NextRequest) {
@@ -84,11 +92,11 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'File too large. Max 20MB for summarization.' }, { status: 413 });
+      return NextResponse.json({ success: false, error: 'File too large. Max 20MB supported.' }, { status: 413 });
     }
 
     const geminiKey = process.env.GEMINI_API_KEY;
@@ -102,26 +110,21 @@ export async function POST(request: NextRequest) {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     // Extract text content
-    console.log(`[Summarize API] Processing: ${file.name}`);
-    const extractedText = await extractTextFromFile(fileBuffer, mimeType, file.name);
-    console.log(`[Summarize API] Extracted text length: ${extractedText.length} bytes`);
+    console.log(`[Summarize API] Processing: ${file.name} (${file.size} bytes)`);
+    const extraction = await extractTextFromFile(fileBuffer, mimeType, file.name);
 
-    // If we couldn't extract enough meaningful text, return the friendly error directly
-    if (extractedText.includes('Unable to read this file') || extractedText.length < 10) {
+    if (extraction.error || !extraction.text) {
+      console.warn(`[Summarize API] Extraction failed: ${extraction.error}`);
       return NextResponse.json({ 
         success: false, 
-        error: "Unable to read this file. Try another document or a text-based PDF." 
+        error: extraction.error || "No readable content found." 
       }, { status: 422 });
     }
 
-
     if (!geminiKey) {
-      console.warn('[Summarize API] No GEMINI_API_KEY detected in env.');
-      return NextResponse.json({ error: 'GEMINI_API_KEY missing. Please configure your environment variables.' }, { status: 500 });
+      console.error('[Summarize API] Missing GEMINI_API_KEY');
+      return NextResponse.json({ success: false, error: 'Server configuration error, try again later.' }, { status: 500 });
     }
-
-    // Connect to Official API
-    console.log(`[Summarize API] GEMINI_API_KEY detected. Connecting to Gemini API...`);
 
     const systemPrompt = `You are an expert document analyst. Analyze the provided document content and return a structured JSON summary with these exact fields:
 {
@@ -132,56 +135,49 @@ export async function POST(request: NextRequest) {
 }
 Be concise, professional, and focus on the most important information.`;
 
-    const userPrompt = `Document: "${file.name}"\n\nContent:\n${extractedText.slice(0, 6000)}\n\nProvide a structured JSON summary.`;
+    const userPrompt = `Document: "${file.name}"\n\nContent:\n${extraction.text.slice(0, 6000)}\n\nProvide a structured JSON summary.`;
 
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
-          }],
-          generationConfig: {
-            response_mime_type: "application/json",
-            temperature: 0.3,
-          }
+          contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
+          generationConfig: { response_mime_type: "application/json", temperature: 0.3 }
         })
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('[Summarize API] Gemini Service Error:', errorData);
-        let errorMessage = 'Something went wrong. Please try again.';
-        if (response.status === 400 && errorData.includes('API key not valid')) errorMessage = 'Invalid Gemini API Key. Please verify .env.local configuration.';
-        return NextResponse.json({ success: false, error: errorMessage }, { status: 502 });
+        console.error('[Summarize API] Gemini Service Error:', response.status, errorData);
+        let msg = 'Server error, try again.';
+        if (response.status === 400 && errorData.includes('API key not valid')) msg = 'Invalid configuration, try again later.';
+        return NextResponse.json({ success: false, error: msg }, { status: 502 });
       }
 
       const responseData = await response.json();
       const responseContent = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-
       const summary = JSON.parse(responseContent);
 
-      console.log(`[Summarize API] Summarization Success!`);
+      console.log(`[Summarize API] Success: ${file.name}`);
       return NextResponse.json({
         success: true,
         fileName: file.name,
-        summary,
+        data: summary,
       });
 
     } catch (apiError: any) {
-      console.error('[Summarize API] Gemini Service Error:', apiError);
-      return NextResponse.json({ success: false, error: 'Something went wrong. Please try again.' }, { status: 502 });
+      console.error('[Summarize API] Gemini Connection Error:', apiError);
+      return NextResponse.json({ success: false, error: 'Server error, try again.' }, { status: 502 });
     }
 
   } catch (error) {
-    console.error('[Summarize API] Outer Router Error:', error);
+    console.error('[Summarize API] Critical Failure:', error);
     return NextResponse.json({
       success: false,
-      error: 'Something went wrong. Please try again.',
+      error: 'Server error, try again.',
     }, { status: 500 });
   }
 }
+
 

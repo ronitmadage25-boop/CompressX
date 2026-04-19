@@ -87,17 +87,22 @@ export default function AISummarizer() {
       
       // Safety check: ensure response is JSON
       const contentType = res.headers.get("content-type");
+      console.log(`[AISummarizer] Status: ${res.status}, Type: ${contentType}`);
+
       if (!contentType || !contentType.includes("application/json")) {
         const text = await res.text();
         console.error("[AISummarizer] Non-JSON response:", text.slice(0, 500));
-        throw new Error("Something went wrong. Please try again.");
+        throw new Error("Server error, try again.");
       }
 
       const data = await res.json();
 
-      if (!data.success) throw new Error(data.error ?? 'Summarization failed');
+      if (!data.success) {
+        console.warn("[AISummarizer] API Error:", data.error);
+        throw new Error(data.error || 'Summarization failed');
+      }
 
-      setSummary(data.summary);
+      setSummary(data.data);
       setPhase('typing');
 
       // After title types out, reveal key points one by one
@@ -105,7 +110,8 @@ export default function AISummarizer() {
         const interval = setInterval(() => {
           setRevealedPoints(prev => {
             const next = prev + 1;
-            if (next >= (data.summary.keyPoints?.length ?? 0)) {
+            const pointsCount = data.data.keyPoints?.length ?? 0;
+            if (next >= pointsCount) {
               clearInterval(interval);
               setPhase('done');
             }
@@ -116,11 +122,13 @@ export default function AISummarizer() {
 
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
     } catch (err) {
+      console.error("[AISummarizer] Error:", err);
       setError(err instanceof Error ? err.message : 'Summarization failed');
       setPhase('idle');
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const reset = () => {
