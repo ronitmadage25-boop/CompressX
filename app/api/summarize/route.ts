@@ -40,16 +40,37 @@ async function extractText(buffer: Buffer, ext: string, mimeType: string): Promi
   // ── PDF ──────────────────────────────────────────────────────────────────
   if (ext === 'pdf' || mimeType === 'application/pdf') {
     try {
-      const pdfParse = require('pdf-parse');
+      // pdf-parse may export as `module.exports = fn` OR `{ default: fn }`
+      // We handle both cases to prevent "pdfParse is not a function" in Next.js
+      const pdfModule = require('pdf-parse');
+      const pdfParse: Function = typeof pdfModule === 'function'
+        ? pdfModule
+        : (pdfModule.default ?? pdfModule);
+
+      if (typeof pdfParse !== 'function') {
+        console.error('[Summarize] pdf-parse module did not resolve to a function');
+        return { text: null, error: 'Unable to read this PDF. Please try a different file.' };
+      }
+
       const result = await pdfParse(buffer);
-      const text = (result.text || '').trim();
-      if (text.length > 30) return { text: text.slice(0, TEXT_LIMIT) };
-      return { text: null, error: 'No readable text found in this PDF. It may be scanned or image-based. Please use a text-based PDF.' };
+      const text = (result?.text ?? '').trim();
+
+      console.log(`[Summarize] PDF extracted ${text.length} characters`);
+
+      if (text.length >= 50) return { text: text.slice(0, TEXT_LIMIT) };
+
+      // Parsed OK but no/little text → scanned or image-based PDF
+      return {
+        text: null,
+        error: 'This PDF appears to contain no readable text (possibly scanned or image-based). Please upload a text-based PDF.',
+      };
     } catch (e: any) {
-      console.error('[Summarize] PDF error:', e.message);
-      return { text: null, error: 'Unable to read this PDF. Please ensure it is not corrupted.' };
+      console.error('[Summarize] PDF parse error:', e.message);
+      // Only show "corrupted" when there was an actual parse exception
+      return { text: null, error: 'Unable to read this PDF. The file may be corrupted or password-protected.' };
     }
   }
+
 
   // ── DOCX ─────────────────────────────────────────────────────────────────
   if (ext === 'docx' || mimeType.includes('wordprocessingml')) {
