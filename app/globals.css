@@ -12,6 +12,7 @@
   /* Dark theme (default) */
   --bg: #020407;
   --bg-2: #070b10;
+  --bg-cosmic: var(--bg);
   --surface: rgba(255,255,255,0.028);
   --surface-hover: rgba(255,255,255,0.05);
   --border: rgba(255,255,255,0.08);
@@ -33,22 +34,23 @@
   --shadow-card: 0 24px 80px rgba(0,0,0,0.5);
 }
 
-/* Light theme */
+/* Light theme (Cosmic Lunar Rebuild) */
 [data-theme='light'] {
-  --bg: #f8f9fb;
+  --bg: #f0f9ff;
   --bg-2: #ffffff;
-  --surface: rgba(0,0,0,0.04);
-  --surface-hover: rgba(0,0,0,0.08);
-  --border: rgba(0,0,0,0.12);
-  --border-bright: rgba(0,200,150,0.5);
-  --neon: #00b88f;
-  --neon2: #0088bb;
-  --neon3: #d6005a;
-  --accent-4: #6b2fc9;
-  --text: #111827; /* Darker for better contrast */
-  --muted: #4b5563; /* Much darker for readability */
-  --shadow-neon: 0 0 30px rgba(0,184,143,0.25);
-  --shadow-card: 0 20px 60px rgba(0,0,0,0.12);
+  --bg-cosmic: radial-gradient(circle at 50% 50%, #f0fdff 0%, #e0f2fe 50%, #f5f3ff 100%);
+  --surface: rgba(255, 255, 255, 0.45);
+  --surface-hover: rgba(255, 255, 255, 0.7);
+  --border: rgba(255, 255, 255, 0.5);
+  --border-glow: rgba(0, 230, 255, 0.4);
+  --neon: #00bcd4; /* Bright Cyan */
+  --neon-glow: rgba(0, 188, 212, 0.3);
+  --neon2: #2dd4bf; /* Teal */
+  --neon3: #f43f5e;
+  --text: #0f172a;
+  --muted: #64748b;
+  --shadow-neon: 0 0 40px rgba(0, 188, 212, 0.15);
+  --shadow-card: 0 20px 50px rgba(0, 31, 63, 0.08);
 }
 
 /* ── Reset + Base ─────────────────────────────────────────────────────────── */
@@ -72,7 +74,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   cursor: none !important;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background 0.5s ease, color 0.3s ease;
+}
+
+[data-theme='light'] body {
+  background: var(--bg-cosmic);
 }
 
 /* Force cursor:none on all elements */
@@ -1692,27 +1698,32 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 /* ── Light mode adjustments ─────────────────────────────────────────────── */
+/* ── Cosmic Light Mode Overrides ───────────────────────────────────────── */
 [data-theme='light'] .feature-card {
-  background: rgba(255,255,255,0.7);
-  border-color: rgba(0,0,0,0.1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 188, 212, 0.08);
+  color: #0f172a;
 }
 
 [data-theme='light'] .feature-card--center {
-  background: rgba(0,200,150,0.05);
-  border-color: rgba(0,184,143,0.25);
+  background: rgba(255, 255, 255, 0.55);
+  border-color: var(--neon);
+  box-shadow: 0 15px 50px rgba(0, 188, 212, 0.12);
 }
 
-[data-theme='light'] .feature-card-title { color: #111827; }
-[data-theme='light'] .feature-card-sub { color: #6b7280; }
-[data-theme='light'] .features-sub { color: #4b5563; }
-[data-theme='light'] .converter-dropzone { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.15); }
-[data-theme='light'] .ai-dropzone { background: rgba(0,184,143,0.04); border-color: rgba(0,184,143,0.2); }
-[data-theme='light'] .feature-select { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.15); color: #111827; }
-[data-theme='light'] .ai-result-container { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
-[data-theme='light'] .ai-bubble-content { background: rgba(0,184,143,0.06); border-color: rgba(0,184,143,0.15); }
-[data-theme='light'] .ai-key-point { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); }
-[data-theme='light'] .ai-highlight-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+[data-theme='light'] .feature-card-title { color: #0f172a; font-weight: 700; }
+[data-theme='light'] .feature-card-sub { color: #64748b; }
+[data-theme='light'] .features-sub { color: #475569; }
+[data-theme='light'] .converter-dropzone { background: rgba(255, 255, 255, 0.3); border-color: rgba(0, 188, 212, 0.2); }
+[data-theme='light'] .ai-dropzone { background: rgba(0, 188, 212, 0.04); border-color: rgba(0, 188, 212, 0.2); }
+[data-theme='light'] .feature-select { background: rgba(255, 255, 255, 0.9); border-color: rgba(0, 188, 212, 0.2); color: #0f172a; }
+[data-theme='light'] .ai-result-container { background: rgba(255, 255, 255, 0.6); border-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+[data-theme='light'] .ai-bubble-content { background: rgba(0, 188, 212, 0.06); border-color: rgba(0, 188, 212, 0.15); }
+[data-theme='light'] .ai-key-point { background: rgba(255, 255, 255, 0.4); border-color: rgba(0, 188, 212, 0.1); }
+[data-theme='light'] .ai-highlight-chip { background: rgba(255, 255, 255, 0.5); border-color: rgba(0, 188, 212, 0.1); }
 [data-theme='light'] .pdf-page-thumb { border-color: rgba(0,0,0,0.15); }
 [data-theme='light'] .pdf-page-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); }
 
@@ -1767,4 +1778,131 @@ input[type='number'] { -moz-appearance: textfield; }
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ── Lunar & Cosmic Glow Components ───────────────────────────────────────── */
+.moon-container {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  margin-bottom: -100px;
+  z-index: 1;
+}
+
+.moon-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+.moon-body {
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 40%, #cbd5e1 80%, #94a3b8 100%);
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    inset -15px -15px 40px rgba(0, 0, 0, 0.15),
+    inset 10px 10px 30px rgba(255, 255, 255, 0.8),
+    0 0 80px rgba(255, 255, 255, 0.4);
+}
+
+.moon-crater {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 50%;
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.c1 { width: 45px; height: 45px; top: 22%; left: 28%; opacity: 0.6; }
+.c2 { width: 60px; height: 60px; top: 48%; left: 52%; opacity: 0.4; }
+.c3 { width: 30px; height: 30px; top: 72%; left: 18%; opacity: 0.5; }
+.c4 { width: 22px; height: 22px; top: 15%; left: 62%; opacity: 0.7; }
+
+.moon-highlight {
+  position: absolute;
+  top: 10%; left: 10%;
+  width: 60%; height: 60%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.4), transparent 70%);
+  pointer-events: none;
+}
+
+.moon-glow {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.moon-glow-1 { width: 300px; height: 300px; background: rgba(45, 212, 191, 0.25); filter: blur(50px); }
+.moon-glow-2 { width: 400px; height: 400px; background: rgba(0, 188, 212, 0.15); filter: blur(80px); }
+.moon-glow-3 { width: 550px; height: 550px; background: rgba(14, 165, 233, 0.08); filter: blur(120px); }
+
+.moon-orbit-ring {
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border: 1px solid rgba(0, 188, 212, 0.15);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orbit-particle {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: #00bcd4;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #00bcd4;
+}
+
+.p1 { top: -3px; left: 50%; }
+.p2 { bottom: -3px; left: 50%; }
+
+/* Glassmorphism Styles */
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme='light'] .glass-card {
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 15px 45px rgba(0, 188, 212, 0.08);
+}
+
+.btn-cosmic {
+  background: linear-gradient(135deg, var(--neon) 0%, var(--neon2) 100%);
+  border-radius: 99px;
+  padding: 0.8rem 2.2rem;
+  color: white !important;
+  font-weight: 700;
+  box-shadow: 0 10px 30px var(--neon-glow);
+  transition: all 0.4s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.btn-cosmic:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 40px var(--neon-glow);
+}
+
+.text-gradient-glow {
+  background: linear-gradient(135deg, var(--neon), var(--neon2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px var(--neon-glow));
+}
+
 

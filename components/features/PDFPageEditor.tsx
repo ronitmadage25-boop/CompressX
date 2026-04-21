@@ -167,14 +167,14 @@ export default function PDFPageEditor() {
   }, [handleFile]);
 
   return (
-    <div className="feature-card" style={{ height: '100%' }}>
+    <div className="feature-card glass-card">
       {/* Header */}
       <div className="feature-card-header">
-        <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg,rgba(255,0,110,0.2),rgba(255,100,50,0.1))', border: '1px solid rgba(255,0,110,0.3)' }}>
-          <FileText size={18} style={{ color: '#ff6b9d' }} />
+        <div className="feature-card-icon" style={{ background: 'rgba(244, 63, 94, 0.2)', border: '1px solid #f43f5e' }}>
+          <FileText size={18} style={{ color: '#f43f5e' }} />
         </div>
         <div>
-          <div className="feature-card-title">PDF Page Editor</div>
+          <div className="feature-card-title text-gradient-glow">PDF Page Editor</div>
           <div className="feature-card-sub">Select and remove pages</div>
         </div>
       </div>
@@ -194,11 +194,11 @@ export default function PDFPageEditor() {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--muted)', marginBottom: '1rem' }}>
               {result.remaining} pages remaining · {result.name}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <motion.button whileHover={{ scale: 1.02 }} onClick={download} className="feature-btn feature-btn-primary" style={{ flex: 1 }}>
+            <div className="flex gap-2">
+              <motion.button whileHover={{ scale: 1.02 }} onClick={download} className="btn-cosmic w-full text-xs">
                 <Download size={14} /> Download PDF
               </motion.button>
-              <button onClick={reset} className="feature-btn feature-btn-ghost">New</button>
+              <button onClick={reset} className="feature-btn feature-btn-ghost text-xs">New</button>
             </div>
           </motion.div>
         ) : !file ? (
@@ -302,20 +302,11 @@ export default function PDFPageEditor() {
             {/* Delete button */}
             {pages.length > 0 && !isLoading && (
               <motion.button
-                whileHover={selectedPages.length > 0 && !isDeleting ? { scale: 1.02 } : {}}
+                whileHover={selectedPages.length > 0 && !isDeleting ? { scale: 1.01 } : {}}
                 onClick={handleDelete}
                 disabled={selectedPages.length === 0 || isDeleting}
-                className="feature-btn"
-                style={{
-                  width: '100%',
-                  marginTop: '0.75rem',
-                  background: selectedPages.length > 0
-                    ? 'linear-gradient(135deg,rgba(255,0,110,0.8),rgba(255,60,60,0.8))'
-                    : 'rgba(255,255,255,0.05)',
-                  color: selectedPages.length > 0 ? '#fff' : 'var(--muted)',
-                  border: 'none',
-                  boxShadow: selectedPages.length > 0 ? '0 4px 16px rgba(255,0,110,0.3)' : 'none',
-                }}
+                className={`btn-cosmic w-full bg-rose-500/80 shadow-rose-500/20 ${selectedPages.length === 0 ? 'opacity-50 grayscale' : ''}`}
+                style={{ marginTop: '0.75rem' }}
               >
                 {isDeleting ? (
                   <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8 }}><RefreshCw size={14} /></motion.div> Processing…</>

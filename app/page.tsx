@@ -10,6 +10,7 @@ import PDFLockUnlock from '@/components/features/PDFLockUnlock';
 import AISummarizer from '@/components/features/AISummarizer';
 import PDFPageEditor from '@/components/features/PDFPageEditor';
 
+
 // Dynamic import Three.js scene (SSR disabled)
 const HeroScene = dynamic(() => import('@/components/three/HeroScene'), {
   ssr: false,
@@ -94,7 +95,10 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
         >
-          <div className="hero-eyebrow">
+
+
+          <div className="relative z-10 pt-16">
+            <div className="hero-eyebrow">
             <span className="eyebrow-line" />
             Precision Compression Engine
             <span className="eyebrow-line" />
@@ -102,13 +106,14 @@ export default function HomePage() {
 
           <h1 className="hero-title">
             Compress to an<br />
-            <em>exact target size</em>
+            <em className="text-gradient-glow">exact target size</em>
           </h1>
 
-          <p className="hero-sub">
+          <p className="hero-sub opacity-80">
             Experience premium compression technology designed to deliver<br className="hero-sub-break" />
             precision, performance, and perfection in every file.
           </p>
+          </div>
 
           <div className="format-tags">
             {['JPG', 'PNG', 'WebP', 'PDF', 'DOCX', 'PPTX'].map(t => (
@@ -119,7 +124,7 @@ export default function HomePage() {
 
         {/* ── Compression card ─────────────────────────────────────────────────── */}
         <motion.section
-          className="compress-card"
+          className="compress-card glass-card"
           initial={{ opacity: 0, y: 60, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}

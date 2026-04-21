@@ -110,58 +110,30 @@ export default function PDFLockUnlock() {
   }, [handleFile]);
 
   return (
-    <div className="feature-card" style={{ height: '100%', position: 'relative' }}>
+    <div className="feature-card glass-card">
       {/* Header */}
       <div className="feature-card-header">
-        <div 
-          className="feature-card-icon" 
-          style={{ 
-            background: 'linear-gradient(135deg,rgba(0,255,150,0.2),rgba(0,150,255,0.1))', 
-            border: '1px solid rgba(0,255,150,0.3)' 
-          }}
-        >
+        <div className="feature-card-icon" style={{ background: 'var(--neon-glow)', border: '1px solid var(--neon)' }}>
           {mode === 'lock' ? <Lock size={18} style={{ color: '#00ff96' }} /> : <Unlock size={18} style={{ color: '#00ff96' }} />}
         </div>
         <div>
-          <div className="feature-card-title">PDF Security</div>
+          <div className="feature-card-title text-gradient-glow">PDF Security</div>
           <div className="feature-card-sub">Lock or unlock PDFs safely</div>
         </div>
       </div>
 
       {/* Mode Tabs */}
       {!result && (
-        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: '8px' }}>
+        <div className="flex gap-1 mb-4 p-1 rounded-xl glass-card" style={{ backdropFilter: 'none' }}>
           <button
             onClick={() => handleModeSwitch('lock')}
-            style={{
-              flex: 1,
-              padding: '0.35rem',
-              fontSize: '0.65rem',
-              fontFamily: 'var(--font-mono)',
-              borderRadius: '6px',
-              border: 'none',
-              background: mode === 'lock' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: mode === 'lock' ? '#fff' : 'var(--muted)',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`flex-1 py-1.5 text-[0.65rem] font-mono rounded-lg transition-all ${mode === 'lock' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}
           >
             Lock PDF
           </button>
           <button
             onClick={() => handleModeSwitch('unlock')}
-            style={{
-              flex: 1,
-              padding: '0.35rem',
-              fontSize: '0.65rem',
-              fontFamily: 'var(--font-mono)',
-              borderRadius: '6px',
-              border: 'none',
-              background: mode === 'unlock' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: mode === 'unlock' ? '#fff' : 'var(--muted)',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`flex-1 py-1.5 text-[0.65rem] font-mono rounded-lg transition-all ${mode === 'unlock' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}
           >
             Unlock PDF
           </button>
@@ -183,11 +155,11 @@ export default function PDFLockUnlock() {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--muted)', marginBottom: '1rem' }}>
               {result.name}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <motion.button whileHover={{ scale: 1.02 }} onClick={download} className="feature-btn feature-btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg,rgba(0,255,150,0.8),rgba(0,180,255,0.8))' }}>
+            <div className="flex gap-2">
+              <motion.button whileHover={{ scale: 1.02 }} onClick={download} className="btn-cosmic w-full text-xs">
                 <Download size={14} /> Download PDF
               </motion.button>
-              <button onClick={reset} className="feature-btn feature-btn-ghost">New</button>
+              <button onClick={reset} className="feature-btn feature-btn-ghost text-xs">New</button>
             </div>
           </motion.div>
         ) : !file ? (
@@ -266,19 +238,10 @@ export default function PDFLockUnlock() {
             {error && <div className="feature-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
             <motion.button
-              whileHover={password.trim() && !isProcessing ? { scale: 1.02 } : {}}
+              whileHover={password.trim() && !isProcessing ? { scale: 1.01 } : {}}
               onClick={processFile}
               disabled={!password.trim() || isProcessing}
-              className="feature-btn"
-              style={{
-                width: '100%',
-                background: password.trim()
-                  ? 'linear-gradient(135deg,rgba(0,255,150,0.8),rgba(0,180,255,0.8))'
-                  : 'rgba(255,255,255,0.05)',
-                color: password.trim() ? '#fff' : 'var(--muted)',
-                border: 'none',
-                boxShadow: password.trim() ? '0 4px 16px rgba(0,255,150,0.3)' : 'none',
-              }}
+              className={`btn-cosmic w-full ${!password.trim() ? 'opacity-50 grayscale' : ''}`}
             >
               {isProcessing ? (
                 <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8 }}><RefreshCw size={14} /></motion.div> Processing…</>

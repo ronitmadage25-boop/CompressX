@@ -16,7 +16,7 @@ interface SummaryResult {
 
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = new Set(['pdf', 'docx', 'pptx', 'txt']);
+const ACCEPTED_EXTENSIONS = new Set(['pdf']);
 
 function getExtension(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? '';
@@ -63,7 +63,7 @@ export default function AISummarizer() {
   const validateFile = (f: File): string | null => {
     const ext = getExtension(f.name);
     if (!ACCEPTED_EXTENSIONS.has(ext)) {
-      return `Unsupported file type (.${ext || 'unknown'}). Please upload PDF, DOCX, or PPTX.`;
+      return `Unsupported file type (.${ext || 'unknown'}). Please upload a PDF file.`;
     }
     if (f.size === 0) return 'This file is empty.';
     if (f.size > MAX_SIZE_BYTES) return `File too large. Maximum size is ${MAX_SIZE_MB}MB.`;
@@ -167,11 +167,11 @@ export default function AISummarizer() {
     setRevealedPoints(0);
   };
 
-  const ACCEPTED = '.pdf,.docx,.pptx,.txt';
+  const ACCEPTED = '.pdf';
 
   return (
     <>
-      <div className="feature-card feature-card--center">
+    <div className="feature-card feature-card--center glass-card">
         {/* Glow ring */}
         <div className="ai-glow-ring" />
 
@@ -181,7 +181,7 @@ export default function AISummarizer() {
             <Sparkles size={20} style={{ color: '#00ffb3' }} />
           </div>
           <div style={{ flex: 1 }}>
-            <div className="feature-card-title" style={{ fontSize: '1.05rem' }}>
+            <div className="feature-card-title text-gradient-glow" style={{ fontSize: '1.05rem' }}>
               AI Smart Summarizer
             </div>
             <div className="feature-card-sub">Powered by Gemini AI — Instant insights</div>
@@ -223,7 +223,7 @@ export default function AISummarizer() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center' }}>
                 <Upload size={24} style={{ color: 'var(--neon)', margin: '0 auto 0.6rem', opacity: 0.7 }} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
-                  Drop PDF, DOCX, or PPTX
+                  Drop a PDF file here
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6, marginTop: '0.3rem' }}>
                   Max {MAX_SIZE_MB}MB · Text-based files only
@@ -273,7 +273,7 @@ export default function AISummarizer() {
           whileTap={file && !isLoading ? { scale: 0.98 } : {}}
           onClick={handleSummarize}
           disabled={!file || isLoading}
-          className="ai-summarize-btn"
+          className={`btn-cosmic w-full ${!file ? 'opacity-50 grayscale' : ''}`}
           style={{ marginTop: '0.75rem', marginBottom: summary ? '1rem' : 0 }}
         >
           {isLoading ? (
@@ -289,7 +289,6 @@ export default function AISummarizer() {
               Summarize with AI
             </>
           )}
-          {!isLoading && file && <div className="btn-shimmer" />}
         </motion.button>
       </div>
 
@@ -300,7 +299,7 @@ export default function AISummarizer() {
               ref={resultsRef}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="ai-result-container"
+              className="ai-result-container glass-card"
               style={{ marginTop: '1.5rem' }}
             >
               {/* AI bubble — title */}
