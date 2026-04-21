@@ -36,6 +36,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#00ffb3" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="CompressX" />
+        <link rel="apple-touch-icon" href="/logo-192.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -52,7 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           {/* Global custom cursor */}
           <div id="cursor-dot" />
-          <div id="cursor-ring" />
           <CursorEffect />
 
           {/* Loader overlay */}
@@ -83,6 +89,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   }
                 }, 90);
               });
+
+              // Register Service Worker
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('[PWA] Service Worker registered:', registration);
+                  }).catch(function(error) {
+                    console.log('[PWA] Service Worker registration failed:', error);
+                  });
+                });
+              }
             `,
           }}
         />

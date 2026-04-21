@@ -1,7 +1,7 @@
 'use client';
 // app/page.tsx — Main landing + compression dashboard
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import CompressionPanel from '@/components/compression/CompressionPanel';
@@ -9,6 +9,12 @@ import ThemeToggle from '@/components/theme/ThemeToggle';
 import PDFLockUnlock from '@/components/features/PDFLockUnlock';
 import AISummarizer from '@/components/features/AISummarizer';
 import PDFPageEditor from '@/components/features/PDFPageEditor';
+import PDFMerge from '@/components/features/PDFMerge';
+import PDFWatermark from '@/components/features/PDFWatermark';
+import PDFPageShuffle from '@/components/features/PDFPageShuffle';
+import InstallPrompt from '@/components/pwa/InstallPrompt';
+import InstallButton from '@/components/pwa/InstallButton';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 
 // Dynamic import Three.js scene (SSR disabled)
@@ -27,6 +33,7 @@ export default function HomePage() {
   const [sessionStat, setSessionStat] = useState<SessionStat>({ files: 0, saved: 0, avgRatio: 0 });
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
+  const { showInstallPrompt, isInstalled, canInstall, handleInstall, handleDismiss, triggerInstallPrompt, reportServiceHealth } = usePWAInstall();
 
   const handleJobComplete = useCallback(() => {
     setSessionStat(prev => ({
@@ -35,6 +42,16 @@ export default function HomePage() {
       avgRatio: prev.avgRatio,
     }));
   }, []);
+
+  // Trigger install prompt on feature interaction
+  const handleFeatureClick = useCallback(() => {
+    triggerInstallPrompt();
+  }, [triggerInstallPrompt]);
+
+  // Report service health when AI errors occur
+  const handleServiceHealthChange = useCallback((isHealthy: boolean) => {
+    reportServiceHealth(isHealthy);
+  }, [reportServiceHealth]);
 
   return (
     <>
@@ -80,6 +97,8 @@ export default function HomePage() {
             <span className="pill-dot" />
             v2.0 · Production
           </div>
+
+          <InstallButton canInstall={canInstall} isInstalled={isInstalled} onClick={handleInstall} />
 
           <ThemeToggle />
         </div>
@@ -162,10 +181,17 @@ export default function HomePage() {
 
           {/* 3-column layout + Bottom panel portal target */}
           <div className="features-container">
-            <div className="features-top-row">
+            <div className="features-top-row" onClick={handleFeatureClick}>
               <PDFLockUnlock />
               <AISummarizer />
               <PDFPageEditor />
+            </div>
+            
+            {/* New Features Row */}
+            <div className="features-top-row" onClick={handleFeatureClick}>
+              <PDFMerge />
+              <PDFWatermark />
+              <PDFPageShuffle />
             </div>
             
             {/* AI Summarizer will inject its results into this container */}
@@ -181,6 +207,9 @@ export default function HomePage() {
           <span>Files deleted within 5 minutes</span>
         </footer>
       </main>
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt isOpen={showInstallPrompt} onInstall={handleInstall} onDismiss={handleDismiss} />
     </>
   );
 }

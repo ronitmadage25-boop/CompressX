@@ -1,52 +1,45 @@
 'use client';
 // components/layout/CursorEffect.tsx
-// Premium global cursor with smooth trailing and hover effects
+// Minimal premium cursor with single glowing dot
 
 import { useEffect } from 'react';
 
 export default function CursorEffect() {
   useEffect(() => {
     const dot = document.getElementById('cursor-dot');
-    const ring = document.getElementById('cursor-ring');
     
-    if (!dot || !ring) return;
+    if (!dot) return;
+
+    // Check if device supports hover (desktop)
+    const hasHover = window.matchMedia('(hover: hover)').matches;
+    if (!hasHover) {
+      // Mobile device - hide custom cursor
+      dot.style.display = 'none';
+      document.body.style.cursor = 'auto';
+      return;
+    }
 
     let mouseX = 0;
     let mouseY = 0;
     let dotX = 0;
     let dotY = 0;
-    let ringX = 0;
-    let ringY = 0;
-    let isHovering = false;
 
-    // Instant dot movement
+    // Smooth cursor movement with lerp
     const onMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      
-      // Update dot position immediately
-      dot.style.left = `${mouseX}px`;
-      dot.style.top = `${mouseY}px`;
     };
 
-    // Smooth ring animation with trailing effect
+    // Smooth animation loop
     let animId: number;
     const animate = () => {
-      // Smooth lerp for ring
-      const lerpFactor = 0.15;
-      ringX += (mouseX - ringX) * lerpFactor;
-      ringY += (mouseY - ringY) * lerpFactor;
+      // Smooth lerp for dot movement
+      const lerpFactor = 0.2;
+      dotX += (mouseX - dotX) * lerpFactor;
+      dotY += (mouseY - dotY) * lerpFactor;
       
-      ring.style.left = `${ringX}px`;
-      ring.style.top = `${ringY}px`;
-      
-      // Add active class when moving
-      const distance = Math.hypot(mouseX - ringX, mouseY - ringY);
-      if (distance > 1) {
-        ring.classList.add('active');
-      } else {
-        ring.classList.remove('active');
-      }
+      // Use transform3d for better performance
+      dot.style.transform = `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`;
       
       animId = requestAnimationFrame(animate);
     };
@@ -55,19 +48,11 @@ export default function CursorEffect() {
     // Enhanced hover effects
     const onEnter = (e: Event) => {
       const target = e.target as HTMLElement;
-      isHovering = true;
       document.body.classList.add('cursor-hover');
-      
-      // Extra scale for buttons
-      if (target.tagName === 'BUTTON' || target.closest('button')) {
-        ring.style.transform = 'translate(-50%, -50%) scale(1.1)';
-      }
     };
 
     const onLeave = () => {
-      isHovering = false;
       document.body.classList.remove('cursor-hover');
-      ring.style.transform = 'translate(-50%, -50%) scale(1)';
     };
 
     // Comprehensive selector for all interactive elements
@@ -104,12 +89,10 @@ export default function CursorEffect() {
     // Hide cursor when leaving window
     const onMouseLeave = () => {
       dot.style.opacity = '0';
-      ring.style.opacity = '0';
     };
 
     const onMouseEnter = () => {
       dot.style.opacity = '1';
-      ring.style.opacity = '1';
     };
 
     document.addEventListener('mousemove', onMove);

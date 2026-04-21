@@ -4,7 +4,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Sparkles, RefreshCw, FileText, Star, ChevronRight, AlertCircle } from 'lucide-react';
+import { Upload, Sparkles, RefreshCw, FileText, Star, ChevronRight, AlertCircle, RotateCcw } from 'lucide-react';
+import { parseAPIError, handleFetchError, isCriticalError } from '@/lib/errorHandler';
 
 interface SummaryHighlight { label: string; value: string; }
 interface SummaryResult {
@@ -17,6 +18,8 @@ interface SummaryResult {
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = new Set(['pdf']);
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 2000; // 2 seconds
 
 function getExtension(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? '';
@@ -53,6 +56,8 @@ export default function AISummarizer() {
   const [phase, setPhase] = useState<'idle' | 'extracting' | 'thinking' | 'typing' | 'done'>('idle');
   const [revealedPoints, setRevealedPoints] = useState(0);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isCritical, setIsCritical] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +87,8 @@ export default function AISummarizer() {
     setError(null);
     setPhase('idle');
     setRevealedPoints(0);
+    setRetryCount(0);
+    setIsCritical(false);
   }, []);
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -91,12 +98,15 @@ export default function AISummarizer() {
     if (f) handleFile(f);
   }, [handleFile]);
 
-  const handleSummarize = async () => {
+  const handleSummarize = async (isRetry = false) => {
     if (!file) return;
 
     // Re-validate before upload (safety net)
     const validationError = validateFile(file);
-    if (validationError) { setError(validationError); return; }
+    if (validationError) { 
+      setError(validationError); 
+      return; 
+    }
 
     setIsLoading(true);
     setError(null);
@@ -111,29 +121,58 @@ export default function AISummarizer() {
       await new Promise(r => setTimeout(r, 400));
       setPhase('thinking');
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 second timeout
+
       const res = await fetch('/api/summarize', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
-      // Always parse JSON — our API guarantees it
+      clearTimeout(timeoutId);
+
+      // Parse response
       let data: any;
       const contentType = res.headers.get('content-type') ?? '';
+      
       if (contentType.includes('application/json')) {
         data = await res.json();
       } else {
-        // Unexpected non-JSON (CDN error, server crash) — treat as service error
         const raw = await res.text().catch(() => '');
         console.error('[AISummarizer] Non-JSON response:', raw.slice(0, 300));
         throw new Error('Unable to process document at the moment. Please try again.');
       }
 
+      // Check for API errors
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error ?? 'Unable to process document at the moment. Please try again.');
+        const apiError = parseAPIError(res.status, data?.error);
+        
+        // Check if critical error
+        if (isCriticalError(res.status)) {
+          setIsCritical(true);
+        }
+
+        // Retry logic for retryable errors
+        if (apiError.isRetryable && retryCount < MAX_RETRIES && !isRetry) {
+          console.log(`[AISummarizer] Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          setRetryCount(retryCount + 1);
+          setError(`${apiError.userMessage} Retrying...`);
+          
+          await new Promise(r => setTimeout(r, RETRY_DELAY));
+          setIsLoading(false);
+          handleSummarize(true);
+          return;
+        }
+
+        throw new Error(apiError.userMessage);
       }
 
+      // Success
       setSummary(data.data);
       setPhase('typing');
+      setRetryCount(0);
+      setIsCritical(false);
 
       setTimeout(() => {
         const interval = setInterval(() => {
@@ -152,7 +191,19 @@ export default function AISummarizer() {
 
     } catch (err: any) {
       console.error('[AISummarizer] Error:', err.message);
-      setError(err.message || 'Unable to process document at the moment. Please try again.');
+      
+      // Handle fetch errors (network, timeout, etc.)
+      let userMessage = err.message;
+      if (err.name === 'AbortError') {
+        const apiError = parseAPIError(408, 'Request timeout');
+        userMessage = apiError.userMessage;
+        setIsCritical(false);
+      } else if (err instanceof TypeError) {
+        const apiError = handleFetchError(err);
+        userMessage = apiError.userMessage;
+      }
+
+      setError(userMessage);
       setPhase('idle');
     } finally {
       setIsLoading(false);
@@ -165,6 +216,8 @@ export default function AISummarizer() {
     setError(null);
     setPhase('idle');
     setRevealedPoints(0);
+    setRetryCount(0);
+    setIsCritical(false);
   };
 
   const ACCEPTED = '.pdf';
@@ -254,16 +307,27 @@ export default function AISummarizer() {
           )}
         </AnimatePresence>
 
-        {/* Error Display */}
+        {/* Error Display with Retry */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             className="feature-error"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}
           >
-            <AlertCircle size={14} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+              <AlertCircle size={14} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+            {retryCount < MAX_RETRIES && !isLoading && (
+              <button
+                onClick={() => handleSummarize(false)}
+                className="feature-btn feature-btn-ghost"
+                style={{ fontSize: '0.6rem', padding: '0.3rem 0.6rem', whiteSpace: 'nowrap' }}
+              >
+                <RotateCcw size={12} /> Retry
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -271,7 +335,7 @@ export default function AISummarizer() {
         <motion.button
           whileHover={file && !isLoading ? { scale: 1.015, y: -2 } : {}}
           whileTap={file && !isLoading ? { scale: 0.98 } : {}}
-          onClick={handleSummarize}
+          onClick={() => handleSummarize(false)}
           disabled={!file || isLoading}
           className={`btn-cosmic w-full ${!file ? 'opacity-50 grayscale' : ''}`}
           style={{ marginTop: '0.75rem', marginBottom: summary ? '1rem' : 0 }}

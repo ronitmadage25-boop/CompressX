@@ -87,174 +87,63 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* ── Custom Cursor (Earth/Planet Theme) ──────────────────────────────────── */
+/* ── Custom Cursor (Minimal Glowing Dot) ──────────────────────────────────── */
 #cursor-dot {
-  width: 12px;
-  height: 12px;
-  /* Earth-like futuristic gradient: Deep blue oceans, neon cyan highlights */
-  background: radial-gradient(circle at 35% 35%, #00f2ff 0%, #0066ff 50%, #0033aa 100%);
-  border-radius: 50%;
   position: fixed;
-  top: 0; 
-  left: 0;
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle at 30% 30%, #00ffb3 0%, #00cc99 60%, #009977 100%);
+  border-radius: 50%;
   pointer-events: none;
-  z-index: 99999;
-  transform: translate(-50%, -50%);
+  z-index: 9999;
   mix-blend-mode: screen;
   box-shadow: 
-    0 0 15px rgba(0,242,255,0.7),
-    0 0 30px rgba(0,102,255,0.4);
-  transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.3s,
-              background 0.3s ease;
-  animation: earth-pulse 3.5s infinite ease-in-out;
-  will-change: transform, width, height, opacity;
+    0 0 12px rgba(0, 255, 179, 0.6),
+    0 0 24px rgba(0, 255, 179, 0.3),
+    0 0 36px rgba(0, 255, 179, 0.1);
+  transition: all 0.15s ease-out;
+  opacity: 1;
+  will-change: transform;
 }
 
-#cursor-ring {
-  width: 48px;
-  height: 48px;
-  border: 1.5px solid rgba(0,255,179,0.3);
-  border-radius: 50%;
-  position: fixed;
-  top: 0; 
-  left: 0;
-  pointer-events: none;
-  z-index: 99998;
-  transform: translate(-50%, -50%);
-  mix-blend-mode: screen;
-  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1),
-              opacity 0.3s,
-              border-color 0.4s ease;
-  box-shadow: 0 0 20px rgba(0,255,179,0.1);
-  animation: orbit-rotation 10s infinite linear;
-  will-change: transform, width, height, border-color, opacity;
-}
-
-/* The Satellite/Moon orbital element */
-#cursor-ring::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  background: var(--neon);
-  border-radius: 50%;
-  transform: translateX(-50%);
-  box-shadow: 0 0 10px var(--neon), 0 0 20px rgba(0,255,179,0.5);
-  animation: satellite-glow 2s infinite alternate ease-in-out;
-}
-
-/* Hover State - Expanding Planet & Tight Orbit */
+/* Hover State - Slightly larger dot */
 .cursor-hover #cursor-dot {
-  width: 22px;
-  height: 22px;
-  background: radial-gradient(circle at 35% 35%, #00ffb3 0%, #00d9a0 60%, #00f2ff 100%);
-  box-shadow: 0 0 30px rgba(0,255,179,0.9), 0 0 60px rgba(0,242,255,0.4);
-  animation-duration: 1s; /* Faster pulse */
-}
-
-.cursor-hover #cursor-ring {
-  width: 34px;
-  height: 34px;
-  border-color: rgba(0,255,179,0.7);
-  border-width: 2px;
-  animation-duration: 3s; /* Speed up orbit on hover */
-}
-
-/* Animations */
-@keyframes earth-pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: brightness(1); }
-  50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.9; filter: brightness(1.2); }
-}
-
-@keyframes orbit-rotation {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-@keyframes satellite-glow {
-  from { opacity: 0.8; transform: translateX(-50%) scale(0.9); }
-  to { opacity: 1; transform: translateX(-50%) scale(1.2); }
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 30% 30%, #00ffcc 0%, #00b88f 60%, #008866 100%);
+  box-shadow: 
+    0 0 16px rgba(0, 255, 204, 0.8),
+    0 0 32px rgba(0, 255, 204, 0.4),
+    0 0 48px rgba(0, 255, 204, 0.2);
 }
 
 /* Light theme cursor - optimized for visibility */
 [data-theme='light'] #cursor-dot {
   background: radial-gradient(circle at 35% 35%, #0088cc 0%, #0044aa 60%, #002288 100%);
   mix-blend-mode: normal;
-  box-shadow: 0 4px 15px rgba(0,68,170,0.3);
-}
-
-[data-theme='light'] #cursor-ring {
-  border-color: rgba(0,184,143,0.4);
-  mix-blend-mode: normal;
-  box-shadow: none;
-}
-
-[data-theme='light'] #cursor-ring::after {
-  background: #00b88f;
-  box-shadow: 0 0 8px rgba(0,184,143,0.3);
-}
-
-/* Cursor trail effect */
-#cursor-ring::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,255,179,0.1) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s, background 0.3s ease;
-}
-
-[data-theme='light'] #cursor-ring::before {
-  background: radial-gradient(circle, rgba(0,136,102,0.15) 0%, transparent 70%);
-}
-
-#cursor-ring.active::before {
-  opacity: 1;
-}
-
-/* Hover state classes */
-.cursor-hover #cursor-dot {
-  width: 18px;
-  height: 18px;
-  background: radial-gradient(circle, #00ffb3 0%, #00b8ff 100%);
   box-shadow: 
-    0 0 16px rgba(0,255,179,1),
-    0 0 32px rgba(0,255,179,0.7),
-    0 0 48px rgba(0,255,179,0.4);
+    0 0 12px rgba(0, 136, 204, 0.6),
+    0 0 24px rgba(0, 136, 204, 0.3),
+    0 0 36px rgba(0, 136, 204, 0.1);
 }
 
 [data-theme='light'] .cursor-hover #cursor-dot {
   background: radial-gradient(circle, #00a67d 0%, #0088bb 100%);
   box-shadow: 
-    0 0 16px rgba(0,166,125,0.8),
-    0 0 32px rgba(0,166,125,0.5),
-    0 0 48px rgba(0,166,125,0.3),
-    0 0 3px rgba(0,0,0,0.3);
+    0 0 16px rgba(0, 166, 125, 0.8),
+    0 0 32px rgba(0, 166, 125, 0.4),
+    0 0 48px rgba(0, 166, 125, 0.2);
 }
 
-.cursor-hover #cursor-ring {
-  width: 60px;
-  height: 60px;
-  border-color: rgba(0,255,179,0.95);
-  border-width: 3px;
-  background: radial-gradient(circle, rgba(0,255,179,0.08) 0%, transparent 70%);
-  box-shadow: 
-    0 0 28px rgba(0,255,179,0.6),
-    inset 0 0 28px rgba(0,255,179,0.3);
-}
-
-[data-theme='light'] .cursor-hover #cursor-ring {
-  border-color: rgba(0,136,102,0.9);
-  background: radial-gradient(circle, rgba(0,136,102,0.12) 0%, transparent 70%);
-  box-shadow: 
-    0 0 28px rgba(0,136,102,0.5),
-    inset 0 0 28px rgba(0,136,102,0.2),
-    0 0 0 1px rgba(0,0,0,0.15);
+/* Mobile - disable custom cursor */
+@media (hover: none) {
+  #cursor-dot {
+    display: none !important;
+  }
+  
+  body, *, *::before, *::after {
+    cursor: auto !important;
+  }
 }
 
 /* ── Page Loader ──────────────────────────────────────────────────────────── */
@@ -1906,3 +1795,361 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NEW PDF FEATURES — Merge, Watermark, Page Shuffle
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── PDF File Item (Merge feature) ──────────────────────────────────────── */
+.pdf-file-item {
+  transition: all 0.2s ease;
+}
+
+.pdf-file-item:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* ── Feature Result ─────────────────────────────────────────────────────── */
+.feature-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: rgba(0,255,179,0.03);
+  border: 1px solid rgba(0,255,179,0.12);
+  border-radius: 12px;
+}
+
+/* ── Feature Error ──────────────────────────────────────────────────────── */
+.feature-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255,107,157,0.1);
+  border: 1px solid rgba(255,107,157,0.25);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #ff6b9d;
+}
+
+/* ── PDF Page Grid ──────────────────────────────────────────────────────── */
+.pdf-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,255,179,0.3) transparent;
+}
+
+.pdf-page-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.pdf-page-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pdf-page-grid::-webkit-scrollbar-thumb {
+  background: rgba(0,255,179,0.3);
+  border-radius: 99px;
+}
+
+.pdf-page-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,255,179,0.5);
+}
+
+/* ── PDF Page Thumbnail ─────────────────────────────────────────────────── */
+.pdf-page-thumb {
+  position: relative;
+  aspect-ratio: 3/4;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.pdf-page-thumb:active {
+  cursor: grabbing;
+}
+
+.pdf-page-thumb:hover {
+  border-color: rgba(0,255,179,0.3);
+  box-shadow: 0 0 12px rgba(0,255,179,0.15);
+}
+
+.pdf-page-thumb.selected {
+  border-color: #ff6b9d;
+  box-shadow: 0 0 16px rgba(255,107,157,0.3);
+}
+
+/* ── PDF Page Number ────────────────────────────────────────────────────── */
+.pdf-page-num {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  color: var(--neon);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  backdrop-filter: blur(8px);
+}
+
+/* ── PDF Page Delete Mark ───────────────────────────────────────────────── */
+.pdf-page-delete-mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,107,157,0.2);
+  border: 2px solid #ff6b9d;
+  border-radius: 6px;
+  color: #ff6b9d;
+}
+
+/* ── Input Field ────────────────────────────────────────────────────────── */
+.input-field {
+  width: 100%;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: rgba(0,255,179,0.4);
+  box-shadow: 0 0 0 3px rgba(0,255,179,0.06);
+  background: rgba(0,255,179,0.02);
+}
+
+.input-field::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── Range Slider ───────────────────────────────────────────────────────── */
+input[type='range'] {
+  width: 100%;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon), var(--neon2));
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,255,179,0.4);
+  transition: all 0.2s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 12px rgba(0,255,179,0.6);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon), var(--neon2));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(0,255,179,0.4);
+  transition: all 0.2s ease;
+}
+
+input[type='range']::-moz-range-thumb:hover {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 12px rgba(0,255,179,0.6);
+}
+
+/* ── Color Input ────────────────────────────────────────────────────────── */
+input[type='color'] {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+input[type='color']:hover {
+  box-shadow: 0 0 12px rgba(0,255,179,0.3);
+}
+
+/* ── Flex utilities ─────────────────────────────────────────────────────── */
+.flex {
+  display: flex;
+}
+
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.w-full { width: 100%; }
+
+/* ── Light theme adjustments for new features ───────────────────────────── */
+[data-theme='light'] .pdf-file-item {
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme='light'] .pdf-file-item:hover {
+  background: rgba(255,255,255,0.5);
+  border-color: rgba(0,188,212,0.2);
+}
+
+[data-theme='light'] .feature-result {
+  background: rgba(0,188,212,0.05);
+  border-color: rgba(0,188,212,0.2);
+}
+
+[data-theme='light'] .feature-error {
+  background: rgba(255,107,157,0.08);
+  border-color: rgba(255,107,157,0.2);
+}
+
+[data-theme='light'] .pdf-page-thumb {
+  border-color: rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.5);
+}
+
+[data-theme='light'] .pdf-page-thumb:hover {
+  border-color: rgba(0,188,212,0.4);
+  box-shadow: 0 0 12px rgba(0,188,212,0.2);
+}
+
+[data-theme='light'] .pdf-page-num {
+  background: rgba(0,0,0,0.4);
+  color: var(--neon);
+}
+
+[data-theme='light'] .input-field {
+  background: rgba(255,255,255,0.6);
+  border-color: rgba(0,0,0,0.1);
+  color: #0f172a;
+}
+
+[data-theme='light'] .input-field:focus {
+  border-color: rgba(0,188,212,0.4);
+  background: rgba(0,188,212,0.05);
+}
+
+[data-theme='light'] .input-field::placeholder {
+  color: rgba(0,0,0,0.3);
+}
+
+/* ── Responsive adjustments for new features ────────────────────────────── */
+@media (max-width: 768px) {
+  .pdf-page-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pdf-page-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 200px;
+  }
+  
+  .pdf-file-item {
+    flex-direction: column;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PWA INSTALL BUTTON & PROMPT STYLES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Install button in navbar */
+.install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,255,179,0.15), rgba(0,184,255,0.1));
+  border: 1px solid rgba(0,255,179,0.4);
+  color: var(--neon);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.install-btn:hover {
+  background: linear-gradient(135deg, rgba(0,255,179,0.25), rgba(0,184,255,0.15));
+  border-color: rgba(0,255,179,0.6);
+  box-shadow: 0 0 20px rgba(0,255,179,0.3);
+  transform: translateY(-2px);
+}
+
+.install-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,255,179,0.2), transparent);
+  opacity: 0;
+  animation: installGlow 2s ease-in-out infinite;
+}
+
+@keyframes installGlow {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Light theme adjustments */
+[data-theme='light'] .install-btn {
+  background: linear-gradient(135deg, rgba(0,184,143,0.15), rgba(0,153,204,0.1));
+  border-color: rgba(0,184,143,0.4);
+  color: #00b88f;
+}
+
+[data-theme='light'] .install-btn:hover {
+  background: linear-gradient(135deg, rgba(0,184,143,0.25), rgba(0,153,204,0.15));
+  border-color: rgba(0,184,143,0.6);
+  box-shadow: 0 0 20px rgba(0,184,143,0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .install-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .install-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
+  }
+}

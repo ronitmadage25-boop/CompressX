@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const pagesToDeleteStr = formData.get('pagesToDelete') as string | null;
+    const pageOrderStr = formData.get('pageOrder') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No PDF file provided' }, { status: 400 });
@@ -23,11 +24,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only PDF files are supported' }, { status: 400 });
     }
 
-    const pagesToDelete: number[] = pagesToDeleteStr ? JSON.parse(pagesToDeleteStr) : [];
-
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
     const totalPages = pdfDoc.getPageCount();
+
+    // Handle page reordering (shuffle)
+    if (pageOrderStr) {
+      const pageOrder: number[] = JSON.parse(pageOrderStr);
+      
+      console.log('[PDF Pages API] Total pages:', totalPages);
+      console.log('[PDF Pages API] New page order:', pageOrder);
+
+      if (pageOrder.length !== totalPages) {
+        return NextResponse.json({ error: 'Invalid page order length' }, { status: 400 });
+      }
+
+      // Validate all indices are valid
+      const invalid = pageOrder.filter(p => p < 0 || p >= totalPages);
+      if (invalid.length > 0) {
+        return NextResponse.json({ error: `Invalid page numbers: ${invalid.join(', ')}` }, { status: 400 });
+      }
+
+      // Create new PDF with reordered pages - optimized for speed
+      const newPdf = await PDFDocument.create();
+      
+      // Get all pages at once
+      const allPages = pdfDoc.getPages();
+      
+      // Copy pages in new order
+      for (const pageIdx of pageOrder) {
+        const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIdx]);
+        newPdf.addPage(copiedPage);
+      }
+
+      const pdfBytes = await newPdf.save();
+      const base64 = Buffer.from(pdfBytes).toString('base64');
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+
+      return NextResponse.json({
+        success: true,
+        originalPages: totalPages,
+        remainingPages: totalPages,
+        downloadUrl: `data:application/pdf;base64,${base64}`,
+        fileName: `${baseName}_reordered.pdf`,
+        originalSize: fileBuffer.length,
+        newSize: pdfBytes.length,
+      });
+    }
+
+    // Handle page deletion
+    const pagesToDelete: number[] = pagesToDeleteStr ? JSON.parse(pagesToDeleteStr) : [];
 
     console.log('[PDF Pages API] Total pages:', totalPages);
     console.log('[PDF Pages API] Pages to delete:', pagesToDelete);
